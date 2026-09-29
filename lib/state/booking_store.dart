@@ -25,6 +25,10 @@ class BookingStore extends ChangeNotifier {
         _random = random ?? Random();
 
   final NotificationStore? notifications;
+
+  /// Called with every newly confirmed booking (AppServices wires this to
+  /// `FlightStatusService.trackBooking` so simulated pushes fire for it).
+  void Function(Booking booking)? onBookingConfirmed;
   final DateTime Function() clock;
   final Random _random;
   final List<Booking> _bookings = [];
@@ -51,13 +55,34 @@ class BookingStore extends ChangeNotifier {
       try {
         _bookings.addAll((jsonDecode(raw) as List)
             .map((e) => Booking.fromJson(Map<String, dynamic>.from(e as Map))));
-      } catch (_) {
-        // Corrupt data: start empty rather than crash.
+      } catch (e) {
+        debugPrint('BookingStore: corrupt saved bookings, starting empty: $e');
       }
+      _reseedSampleIfDeparted();
     }
     _sort();
     _loaded = true;
     notifyListeners();
+  }
+
+  /// The demo booking K7Q2ZP is seeded relative to the first launch. If it has
+  /// since departed and was never touched (not cancelled, no check-in, same
+  /// flight and seat), it is re-seeded relative to now so the demo check-in
+  /// always works. A booking the user changed is left alone.
+  void _reseedSampleIfDeparted() {
+    final i = _bookings.indexWhere((b) => b.pnr == SampleData.samplePnr);
+    if (i < 0) return;
+    final b = _bookings[i];
+    final fresh = SampleData.sampleBooking(clock());
+    final unchanged = !b.isCancelled &&
+        b.checkedIn.isEmpty &&
+        b.segments.length == 1 &&
+        b.segments.single.flight.id == fresh.segments.single.flight.id &&
+        mapEquals(b.segments.single.seats, fresh.segments.single.seats);
+    if (unchanged && !b.departure.isAfter(clock())) {
+      _bookings[i] = fresh;
+      _save();
+    }
   }
 
   /// Completes when all pending writes are done.
@@ -66,8 +91,12 @@ class BookingStore extends ChangeNotifier {
   void _save() {
     final data = jsonEncode(_bookings.map((b) => b.toJson()).toList());
     _saving = _saving.then((_) async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(prefsKey, data);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(prefsKey, data);
+      } catch (e) {
+        debugPrint('BookingStore: saving bookings failed: $e');
+      }
     });
   }
 
@@ -205,6 +234,7 @@ class BookingStore extends ChangeNotifier {
     _sort();
     _draft = null;
     _save();
+    onBookingConfirmed?.call(booking);
     notifyListeners();
     notifications?.push(
       title: 'Booking confirmed · ${booking.pnr}',
@@ -261,10 +291,22 @@ class BookingStore extends ChangeNotifier {
 
   // ---- Check-in & cancel --------------------------------------------------
 
+  /// Check-in seat rule: a change may not cost more than what was already
+  /// paid. With a booked seat, [target]'s fee ([PricingEngine.seatFee] for
+  /// [family]) must be at most the booked seat's fee. Without one, only
+  /// standard / standard-middle seats are allowed (complimentary auto-assign
+  /// alternatives, so nothing is charged).
+  static bool seatChangeAllowed(Seat target, Seat? booked, FareFamily family) {
+    if (booked == null) return target.tier.isStandard;
+    return PricingEngine.seatFee(target, family) <= PricingEngine.seatFee(booked, family);
+  }
+
   /// Web check-in for one passenger on one segment. [seatId] null keeps the
   /// booked seat or auto-assigns a free standard seat. Returns false when the
   /// booking/passenger is unknown, cancelled, the window is closed
-  /// ([CheckInRules.isOpen]) or the seat is taken.
+  /// ([CheckInRules.isOpen]), the seat is taken, or the new seat would carry a
+  /// higher fee than the booked one ([seatChangeAllowed]). Seat changes at
+  /// check-in never change the fare.
   bool checkIn(String pnr, int segIndex, String passengerId, String? seatId) {
     final b = byPnr(pnr);
     if (b == null || b.isCancelled) return false;
@@ -293,6 +335,9 @@ class BookingStore extends ChangeNotifier {
     if (seat == null) return false;
     if (heldByCompanions.contains(target)) return false;
     if (seat.occupied && target != current) return false;
+    if (target != current && !seatChangeAllowed(seat, current == null ? null : cabin[current], seg.family)) {
+      return false;
+    }
 
     final segments = [...b.segments];
     segments[segIndex] = seg.copyWith(seats: {...seg.seats, passengerId: target});
@@ -316,11 +361,21 @@ class BookingStore extends ChangeNotifier {
     return b == null ? 0 : PricingEngine.cancellationRefund(b, clock());
   }
 
+  /// Why [pnr] cannot be cancelled, or null when it can. Once any passenger
+  /// has checked in, the booking can no longer be cancelled.
+  String? cancelBlockedReason(String pnr) {
+    final b = byPnr(pnr);
+    if (b != null && b.checkedIn.values.any((v) => v)) {
+      return 'A passenger has already checked in, so this booking can no longer be cancelled.';
+    }
+    return null;
+  }
+
   /// Cancels and returns the refund ([PricingEngine.cancellationRefund]);
-  /// 0 for unknown or already-cancelled bookings.
+  /// 0 for unknown, already-cancelled or blocked ([cancelBlockedReason]) bookings.
   int cancel(String pnr) {
     final b = byPnr(pnr);
-    if (b == null || b.isCancelled) return 0;
+    if (b == null || b.isCancelled || cancelBlockedReason(pnr) != null) return 0;
     final refund = PricingEngine.cancellationRefund(b, clock());
     _replace(b.copyWith(status: BookingStatus.cancelled));
     notifications?.push(

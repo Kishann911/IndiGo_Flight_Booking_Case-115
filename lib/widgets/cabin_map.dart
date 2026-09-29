@@ -16,6 +16,9 @@ import '../theme.dart';
 /// - [passengerSeats]: seatId → short marker label (e.g. initials) for seats
 ///   already held by this party; build it with [CabinMap.markersFrom].
 /// - [family]: when given, prices in semantics labels follow the Flex rule.
+/// - [lockedSeats]: free seats that cannot be picked (e.g. paid seats at
+///   check-in); drawn disabled with a lock and [lockedMessage] as tooltip.
+/// - [seatSize]: null picks 32 when the available width is under 380, else 36.
 ///
 /// Not vertically scrollable: put it inside a scroll view. It scrolls
 /// horizontally when narrower than ~310 px. Each seat has key `seat-<id>`.
@@ -27,7 +30,9 @@ class CabinMap extends StatelessWidget {
     required this.onTap,
     this.passengerSeats = const {},
     this.family,
-    this.seatSize = 36,
+    this.seatSize,
+    this.lockedSeats = const {},
+    this.lockedMessage = 'Fee applies — choose paid seats while booking',
   });
 
   final List<Seat> seats;
@@ -35,7 +40,9 @@ class CabinMap extends StatelessWidget {
   final ValueChanged<Seat>? onTap;
   final Map<String, String> passengerSeats;
   final FareFamily? family;
-  final double seatSize;
+  final double? seatSize;
+  final Set<String> lockedSeats;
+  final String lockedMessage;
 
   /// passengerId → seatId (the draft/booking shape) into seatId → initials.
   static Map<String, String> markersFrom(Map<String, String> seatByPassenger, List<Passenger> passengers) => {
@@ -47,7 +54,11 @@ class CabinMap extends StatelessWidget {
   static Widget legend({FareFamily? family}) => CabinLegend(family: family);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, c) => _buildMap(context, c, seatSize ?? (c.maxWidth < 380 ? 32.0 : 36.0)),
+      );
+
+  Widget _buildMap(BuildContext context, BoxConstraints c, double seatSize) {
     final byId = {for (final s in seats) s.id: s};
     final theme = Theme.of(context);
     final gap = seatSize * 0.12;
@@ -71,12 +82,12 @@ class CabinMap extends StatelessWidget {
       rows.add(Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (final l in CabinLayout.leftBlock) _seat(context, byId['$r$l'] ?? Seat.at(r, l), cell),
+          for (final l in CabinLayout.leftBlock) _seat(context, byId['$r$l'] ?? Seat.at(r, l), cell, seatSize),
           SizedBox(
             width: aisle,
             child: Text('$r', textAlign: TextAlign.center, style: theme.textTheme.labelSmall),
           ),
-          for (final l in CabinLayout.rightBlock) _seat(context, byId['$r$l'] ?? Seat.at(r, l), cell),
+          for (final l in CabinLayout.rightBlock) _seat(context, byId['$r$l'] ?? Seat.at(r, l), cell, seatSize),
         ],
       ));
       if (r == CabinLayout.exitRows.last) rows.add(_exitMarker(context, cell * 6 + aisle));
@@ -102,13 +113,11 @@ class CabinMap extends StatelessWidget {
       ),
     );
 
-    return LayoutBuilder(
-      builder: (context, c) => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: c.maxWidth.isFinite ? c.maxWidth : width),
-          child: Center(child: fuselage),
-        ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: c.maxWidth.isFinite ? c.maxWidth : width),
+        child: Center(child: fuselage),
       ),
     );
   }
@@ -132,19 +141,25 @@ class CabinMap extends StatelessWidget {
     );
   }
 
-  Widget _seat(BuildContext context, Seat seat, double cell) {
+  Widget _seat(BuildContext context, Seat seat, double cell, double seatSize) {
     final theme = Theme.of(context);
     final marker = passengerSeats[seat.id];
     final isSelected = seat.id == selected;
     final ours = marker != null;
-    final disabled = seat.occupied && !ours && !isSelected;
+    final occupied = seat.occupied && !ours && !isSelected;
+    final locked = !occupied && !ours && !isSelected && lockedSeats.contains(seat.id);
+    final disabled = occupied || locked;
     final tierColor = AppColors.tier(seat.tier);
     final price = family == null ? seat.price : PricingEngine.seatFee(seat, family!);
 
     final Color fill;
     final Color border;
     final Color fg;
-    if (disabled) {
+    if (locked) {
+      fill = tierColor.withValues(alpha: 0.06);
+      border = tierColor.withValues(alpha: 0.4);
+      fg = theme.colorScheme.outline;
+    } else if (occupied) {
       fill = AppColors.seatOccupied.withValues(alpha: 0.5);
       border = AppColors.seatOccupied;
       fg = theme.colorScheme.outline;
@@ -162,8 +177,10 @@ class CabinMap extends StatelessWidget {
       fg = tierColor;
     }
 
-    final state = disabled ? 'occupied' : (isSelected ? 'selected' : (ours ? 'held by $marker' : 'available'));
-    return SizedBox(
+    final state = locked
+        ? 'locked, fee applies'
+        : (occupied ? 'occupied' : (isSelected ? 'selected' : (ours ? 'held by $marker' : 'available')));
+    final box = SizedBox(
       width: cell,
       height: cell,
       child: Center(
@@ -188,7 +205,7 @@ class CabinMap extends StatelessWidget {
                   height: seatSize,
                   child: Center(
                     child: disabled
-                        ? Icon(Icons.close, size: seatSize * 0.4, color: fg)
+                        ? Icon(locked ? Icons.lock_outline : Icons.close, size: seatSize * 0.4, color: fg)
                         : Text(
                             marker ?? seat.letter,
                             style: theme.textTheme.labelSmall?.copyWith(color: fg, fontWeight: FontWeight.w700),
@@ -201,6 +218,7 @@ class CabinMap extends StatelessWidget {
         ),
       ),
     );
+    return locked ? Tooltip(message: lockedMessage, child: box) : box;
   }
 }
 

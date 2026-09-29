@@ -71,7 +71,8 @@ class _FareCalendarScreenState extends State<FareCalendarScreen> {
             maxWidth: 640,
             child: SectionCard(
               title: 'Lowest fare per day',
-              subtitle: 'Per passenger, Lite fare. Next 60 days. Tap a day to select it.',
+              subtitle: 'Per passenger, Lite fare. Next 60 days. Tap a day to select it.\n'
+                  'Fares include booking-window pricing — book early to save',
               icon: Icons.calendar_month,
               child: Column(
                 children: [

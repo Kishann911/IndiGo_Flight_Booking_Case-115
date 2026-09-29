@@ -48,13 +48,10 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
     });
   }
 
-  void _next(BookingStore store, {bool skip = false}) {
+  /// Continues to the next step. "Skip" keeps any seats already chosen; only
+  /// passengers without a seat are left to auto-assign at check-in.
+  void _next(BookingStore store) {
     final d = store.draft!;
-    if (skip) {
-      for (final p in d.passengers) {
-        store.setSeat(widget.segIndex, p.id, null);
-      }
-    }
     final Widget page = widget.segIndex + 1 < d.segmentCount
         ? SeatSelectionScreen(segIndex: widget.segIndex + 1)
         : const ExtrasScreen();
@@ -183,7 +180,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
                     Wrap(spacing: AppSpace.s, runSpacing: AppSpace.s, children: [
                       TextButton(
                         key: const ValueKey('seat-skip'),
-                        onPressed: () => _next(store, skip: true),
+                        onPressed: () => _next(store),
                         child: const Text('Skip (auto-assign at check-in)'),
                       ),
                       FilledButton(

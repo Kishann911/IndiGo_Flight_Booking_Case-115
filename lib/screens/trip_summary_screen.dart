@@ -67,6 +67,7 @@ class TripSummaryScreen extends StatelessWidget {
     final subject = booking ??
         Booking(pnr: 'DRAFT0', bookedAt: store.clock(), passengers: passengers, segments: segments, addOns: addOns, fare: fare);
     final now = store.clock();
+    final blockedReason = booking == null ? null : store.cancelBlockedReason(booking.pnr);
 
     final itinerary = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,15 +117,20 @@ class TripSummaryScreen extends StatelessWidget {
             icon: const Icon(Icons.check),
             label: const Text('Confirm booking (demo — no payment)'),
           ),
-        ] else if (!booking!.isCancelled)
+        ] else if (!booking!.isCancelled) ...[
           OutlinedButton.icon(
             key: const ValueKey('cancel-booking'),
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger),
-            onPressed: () => _confirmCancel(context, booking!.pnr),
+            onPressed: blockedReason == null ? () => _confirmCancel(context, booking!.pnr) : null,
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel booking'),
-          )
-        else
+          ),
+          if (blockedReason != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpace.s),
+              child: Text(blockedReason, key: const ValueKey('cancel-blocked'), style: Theme.of(context).textTheme.bodySmall),
+            ),
+        ] else
           const _CancelledNote(),
       ],
     );
@@ -157,11 +163,16 @@ class TripSummaryScreen extends StatelessWidget {
   Future<void> _confirmCancel(BuildContext context, String pnr) async {
     final store = context.read<BookingStore>();
     final refund = store.refundQuote(pnr);
+    final b = store.byPnr(pnr)!;
+    final departedNoRefund = refund == 0 &&
+        store.clock().isAfter(b.departure) &&
+        !b.segments.every((s) => s.family == FareFamily.flex);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Cancel booking $pnr?'),
         content: Text('Refund if you cancel now: ${Fmt.inr(refund)}\n\n'
+            '${departedNoRefund ? 'This flight has already departed: Lite and Classic fares are not refunded after departure.\n\n' : ''}'
             'Demo only: no money moves.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep booking')),
@@ -305,7 +316,8 @@ class _PolicyCard extends StatelessWidget {
     return 'Refund = total − cancellation fee per flight − add-ons. '
         'Worked example $when: ${Fmt.inr(fare.total)} − ${Fmt.inr(feeTotal)} '
         '(${segments.map((s) => '${s.family.label} ${Fmt.inr(s.family.info.cancellationFee)}').join(' + ')}) '
-        '− ${Fmt.inr(fare.addOnCharges)} add-ons = ${Fmt.inr(refund)} (never below ₹0).';
+        '− ${Fmt.inr(fare.addOnCharges)} add-ons = ${Fmt.inr(refund)} (never below ₹0). '
+        'After departure the refund is ₹0.';
   }
 
   @override

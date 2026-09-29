@@ -32,18 +32,48 @@ class FlightStatusService extends ChangeNotifier {
   Timer? _timer;
   int _ticks = 0;
 
+  /// Tracking is keyed by `flightNo@yyyy-MM-dd` so the same flight number on
+  /// two dates (e.g. a round trip) is tracked separately.
+  static String keyFor(String flightNo, DateTime departure) =>
+      '$flightNo@${departure.year}-${departure.month.toString().padLeft(2, '0')}-${departure.day.toString().padLeft(2, '0')}';
+
+  /// The map key for [flightNo]: exact when [date] is given, otherwise the
+  /// earliest tracked date of that flight number.
+  String? _find(String flightNo, DateTime? date) {
+    if (date != null) {
+      final k = keyFor(flightNo, date);
+      return _tracking.containsKey(k) ? k : null;
+    }
+    String? best;
+    for (final e in _tracking.entries) {
+      if (e.value.flightNo != flightNo) continue;
+      if (best == null || e.value.scheduledDeparture.isBefore(_tracking[best]!.scheduledDeparture)) best = e.key;
+    }
+    return best;
+  }
+
   List<FlightTracking> get tracked => List.unmodifiable(_tracking.values);
-  FlightTracking? tracking(String flightNo) => _tracking[flightNo];
+
+  /// Tracking for [flightNo] (on [date] if given, else its earliest tracked date).
+  FlightTracking? tracking(String flightNo, {DateTime? date}) {
+    final k = _find(flightNo, date);
+    return k == null ? null : _tracking[k];
+  }
+
   bool get isRunning => _timer?.isActive ?? false;
   int get tickCount => _ticks;
 
   /// Oldest first.
-  List<TrackingEvent> eventsFor(String flightNo) => List.unmodifiable(_events[flightNo] ?? const []);
+  List<TrackingEvent> eventsFor(String flightNo, {DateTime? date}) {
+    final k = _find(flightNo, date);
+    return List.unmodifiable(k == null ? const <TrackingEvent>[] : _events[k] ?? const []);
+  }
 
   /// Gets or silently creates (no notifyListeners, so it is safe in build)
   /// the tracking entry for a flight number.
   FlightTracking trackingFor(String flightNo, DateTime scheduledDep, DateTime scheduledArr) {
-    final existing = _tracking[flightNo];
+    final key = keyFor(flightNo, scheduledDep);
+    final existing = _tracking[key];
     if (existing != null) return existing;
     final gate = '${1 + SampleData.stableHash('gate:$flightNo') % 52}';
     final t = _recompute(FlightTracking(
@@ -57,8 +87,8 @@ class FlightStatusService extends ChangeNotifier {
       scheduledDeparture: scheduledDep,
       scheduledArrival: scheduledArr,
     ));
-    _tracking[flightNo] = t;
-    _events[flightNo] = [
+    _tracking[key] = t;
+    _events[key] = [
       TrackingEvent(
         at: clock(),
         text: 'Tracking started · scheduled ${Fmt.time(scheduledDep)} from gate $gate',
@@ -93,70 +123,74 @@ class FlightStatusService extends ChangeNotifier {
   void tick() {
     _ticks++;
     if (_tracking.isEmpty) return;
-    for (final no in _tracking.keys.toList()) {
-      var t = _tracking[no]!;
+    for (final key in _tracking.keys.toList()) {
+      var t = _tracking[key]!;
       final preDeparture = t.status == FlightStatus.scheduled ||
           t.status == FlightStatus.delayed ||
           t.status == FlightStatus.boarding;
       if (preDeparture && eventProbability > 0) {
         if (_random.nextDouble() < eventProbability) {
-          simulateDelay(no, _random.nextBool() ? 15 : 30, notify: false);
+          simulateDelay(t.flightNo, _random.nextBool() ? 15 : 30, notify: false, date: t.scheduledDeparture);
         } else if (_random.nextDouble() < eventProbability) {
-          simulateGateChange(no, nextGate(no), notify: false);
+          simulateGateChange(t.flightNo, nextGate(t.flightNo, date: t.scheduledDeparture),
+              notify: false, date: t.scheduledDeparture);
         }
-        t = _tracking[no]!;
+        t = _tracking[key]!;
       }
-      _setWithTransition(no, _recompute(t));
+      _setWithTransition(key, _recompute(t));
     }
     notifyListeners();
   }
 
   /// Adds [minutes] of delay (deterministic test/demo hook). Returns false
-  /// when [flightNo] is not tracked.
-  bool simulateDelay(String flightNo, int minutes, {bool notify = true}) {
-    final t = _tracking[flightNo];
-    if (t == null) return false;
+  /// when [flightNo] is not tracked. [date] picks the day of the flight.
+  bool simulateDelay(String flightNo, int minutes, {bool notify = true, DateTime? date}) {
+    final key = _find(flightNo, date);
+    final t = key == null ? null : _tracking[key];
+    if (key == null || t == null) return false;
     final delay = t.delayMinutes + minutes;
     final updated = _recompute(t.copyWith(
       delayMinutes: delay,
       estimatedDeparture: t.scheduledDeparture.add(Duration(minutes: delay)),
       estimatedArrival: t.scheduledArrival.add(Duration(minutes: delay)),
     ));
-    _tracking[flightNo] = updated;
+    _tracking[key] = updated;
     final text = '$flightNo delayed by $minutes min · new departure ${Fmt.time(updated.estimatedDeparture)}';
-    _log(flightNo, text, 'delay');
+    _log(key, text, 'delay');
     notifications?.push(title: 'Flight delayed · $flightNo', body: text, kind: NotificationKind.delay);
     if (notify) notifyListeners();
     return true;
   }
 
   /// Moves the flight to [gate]. Returns false when not tracked.
-  bool simulateGateChange(String flightNo, String gate, {bool notify = true}) {
-    final t = _tracking[flightNo];
-    if (t == null) return false;
+  bool simulateGateChange(String flightNo, String gate, {bool notify = true, DateTime? date}) {
+    final key = _find(flightNo, date);
+    final t = key == null ? null : _tracking[key];
+    if (key == null || t == null) return false;
     final old = t.gate;
-    _tracking[flightNo] = t.copyWith(gate: gate);
+    _tracking[key] = t.copyWith(gate: gate);
     final text = '$flightNo gate changed from $old to $gate';
-    _log(flightNo, text, 'gate');
+    _log(key, text, 'gate');
     notifications?.push(title: 'Gate change · $flightNo', body: text, kind: NotificationKind.gate);
     if (notify) notifyListeners();
     return true;
   }
 
   /// A random gate different from the current one (for the demo button).
-  String nextGate(String flightNo) {
-    final current = _tracking[flightNo]?.gate;
+  String nextGate(String flightNo, {DateTime? date}) {
+    final current = tracking(flightNo, date: date)?.gate;
     while (true) {
       final g = '${1 + _random.nextInt(52)}';
       if (g != current) return g;
     }
   }
 
-  void _setWithTransition(String no, FlightTracking next) {
-    final prev = _tracking[no]!;
-    _tracking[no] = next;
+  void _setWithTransition(String key, FlightTracking next) {
+    final prev = _tracking[key]!;
+    _tracking[key] = next;
     if (prev.status == next.status) return;
-    _log(no, '$no · ${next.status.label}', 'status');
+    final no = next.flightNo;
+    _log(key, '$no · ${next.status.label}', 'status');
     if (next.status == FlightStatus.boarding) {
       notifications?.push(
         title: 'Boarding · $no',

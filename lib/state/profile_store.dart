@@ -42,8 +42,8 @@ class ProfileStore extends ChangeNotifier {
           ..clear()
           ..addAll((j['savedTravellers'] as List)
               .map((e) => Passenger.fromJson(Map<String, dynamic>.from(e as Map))));
-      } catch (_) {
-        // Corrupt data: keep defaults.
+      } catch (e) {
+        debugPrint('ProfileStore: corrupt saved data, keeping defaults: $e');
       }
     }
     _loaded = true;
@@ -51,11 +51,6 @@ class ProfileStore extends ChangeNotifier {
   }
 
   Future<void> flush() => _saving;
-
-  void updateMe(Passenger p) {
-    _me = p.copyWith(id: _me.id);
-    _changed();
-  }
 
   /// null or blank clears it.
   void setFrequentFlyerNo(String? number) {
@@ -92,8 +87,12 @@ class ProfileStore extends ChangeNotifier {
   void _changed() {
     final data = jsonEncode({'me': _me.toJson(), 'savedTravellers': _saved.map((p) => p.toJson()).toList()});
     _saving = _saving.then((_) async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(prefsKey, data);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(prefsKey, data);
+      } catch (e) {
+        debugPrint('ProfileStore: saving profile failed: $e');
+      }
     });
     notifyListeners();
   }

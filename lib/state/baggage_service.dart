@@ -39,14 +39,17 @@ class BaggageService extends ChangeNotifier {
   bool get isAutoScanning => _timer?.isActive ?? false;
 
   /// Creates one bag per passenger when the booking includes a check-in bag
-  /// (Classic/Flex, or an extra-baggage add-on). Idempotent and silent (no
+  /// (Classic/Flex, or an extra-baggage add-on), routed on the first flight's
+  /// from → to (not the booking's overall origin/destination). Idempotent and silent (no
   /// notifyListeners), so it is safe to call from initState/build.
   List<Bag> ensureBagsForBooking(Booking b) {
     final entitled = b.segments.any((s) => s.family.info.hasCheckInBag) || b.addOns.any((a) => a.isBaggage);
     if (entitled && !b.isCancelled) {
       for (final p in b.passengers) {
         if (_bags.any((x) => x.pnr == b.pnr && x.passengerId == p.id)) continue;
-        _bags.add(Bag(rfidTag: _newTag(), pnr: b.pnr, passengerId: p.id, from: b.from, to: b.to));
+        // The bag travels on the first flight; later segments are separate check-ins.
+        final first = b.segments.first.flight;
+        _bags.add(Bag(rfidTag: _newTag(), pnr: b.pnr, passengerId: p.id, from: first.from, to: first.to));
       }
     }
     return bagsFor(b.pnr);

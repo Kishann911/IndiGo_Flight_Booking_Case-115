@@ -166,12 +166,6 @@ class SampleData {
     };
   }
 
-  /// Seats for a flight (occupancy from its first leg), with [keepFree] forced free.
-  static List<Seat> cabinFor(Flight f, {Set<String> keepFree = const {}}) {
-    final occ = occupiedSeats(f.legs.first.flightNo, f.departure).difference(keepFree);
-    return CabinLayout.build(occupied: occ);
-  }
-
   // ---- The seeded demo booking -------------------------------------------
 
   static const samplePnr = 'K7Q2ZP';

@@ -147,7 +147,8 @@ void main() {
     final b = s.byPnr('K7Q2ZP')!;
     final pid = b.passengers.single.id;
     final cabin = s.cabinFor(b.segments.single.flight, excludePnr: 'K7Q2ZP');
-    final free = cabin.firstWhere((x) => !x.occupied && x.id != '14C').id;
+    // Booked 14C is a standard seat, so only standard / middle seats are free to move to.
+    final free = cabin.firstWhere((x) => !x.occupied && x.tier.isStandard && x.id != '14C').id;
     expect(s.checkIn('K7Q2ZP', 0, pid, free), isTrue);
     final after = s.byPnr('K7Q2ZP')!;
     expect(after.isCheckedIn(0, pid), isTrue);

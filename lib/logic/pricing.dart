@@ -93,7 +93,8 @@ class PricingEngine {
 
   /// Refund if [b] is cancelled at [now].
   /// - All-Flex booking: the full total if now ≤ first departure − 2 h, else 0.
-  /// - Otherwise: max(0, total − Σ cancellation fee per segment − add-on charges)
+  /// - Otherwise (Lite/Classic, or mixed): 0 once the first flight has
+  ///   departed, else max(0, total − Σ cancellation fee per segment − add-on charges)
   ///   (Lite ₹3,999, Classic ₹2,999, Flex segments in a mixed booking ₹0).
   /// - An already-cancelled booking refunds 0.
   static int cancellationRefund(Booking b, DateTime now) {
@@ -103,6 +104,7 @@ class PricingEngine {
       final cutoff = b.departure.subtract(FareFamilyInfo.flex.freeCancellationCutoff!);
       return now.isAfter(cutoff) ? 0 : b.fare.total;
     }
+    if (now.isAfter(b.departure)) return 0;
     final fees = b.segments.fold<int>(0, (sum, s) => sum + FareFamilyInfo.of(s.family).cancellationFee);
     final refund = b.fare.total - fees - b.fare.addOnCharges;
     return refund < 0 ? 0 : refund;

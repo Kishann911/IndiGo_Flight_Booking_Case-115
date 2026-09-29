@@ -7,6 +7,7 @@ enum ShellTab { book, trips, checkIn, status, profile }
 class ShellController extends ChangeNotifier {
   ShellTab _tab = ShellTab.book;
   String? _checkInPnr;
+  String? _checkInLastName;
 
   ShellTab get tab => _tab;
 
@@ -14,9 +15,10 @@ class ShellController extends ChangeNotifier {
   /// CheckInScreen reads it with [takeCheckInPnr].
   String? get pendingCheckInPnr => _checkInPnr;
 
-  void select(ShellTab tab, {String? checkInPnr}) {
+  void select(ShellTab tab, {String? checkInPnr, String? checkInLastName}) {
     _tab = tab;
     if (checkInPnr != null) _checkInPnr = checkInPnr;
+    if (checkInLastName != null) _checkInLastName = checkInLastName;
     notifyListeners();
   }
 
@@ -27,9 +29,16 @@ class ShellController extends ChangeNotifier {
     return p;
   }
 
+  /// Returns and clears the last name handed over with the PNR (no notify).
+  String? takeCheckInLastName() {
+    final n = _checkInLastName;
+    _checkInLastName = null;
+    return n;
+  }
+
   /// Pops back to HomeShell and switches to [tab].
-  static void goTo(BuildContext context, ShellTab tab, {String? checkInPnr}) {
-    context.read<ShellController>().select(tab, checkInPnr: checkInPnr);
+  static void goTo(BuildContext context, ShellTab tab, {String? checkInPnr, String? checkInLastName}) {
+    context.read<ShellController>().select(tab, checkInPnr: checkInPnr, checkInLastName: checkInLastName);
     Navigator.of(context).popUntil((r) => r.isFirst);
   }
 }

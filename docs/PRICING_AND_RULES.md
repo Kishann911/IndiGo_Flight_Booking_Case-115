@@ -41,6 +41,8 @@ The family charge is added to the dynamic base fare, per passenger per segment.
 
 Flex passengers pay ₹0 for standard and standardMiddle seats.
 
+**Seat changes at check-in never cost money and never raise the price paid.** A passenger with a booked seat may move only to a seat whose fee (`PricingEngine.seatFee` for that segment's fare family) is at most the fee of the booked seat. A passenger with no seat may take only standard or standardMiddle seats ("free seat at check-in (standard seats only)"). Higher-fee seats are locked on the check-in cabin map with "Fee applies — choose paid seats while booking".
+
 ## 4. Add-ons
 
 | Add-on | Price | Charged |
@@ -64,6 +66,8 @@ total        = base + family + seats + meals + add-ons + taxes
 
 - **All segments Flex:** full total refunded if cancelled at or before (first departure - 2 h); otherwise 0.
 - **Otherwise (Lite / Classic, or mixed):** `max(0, total - sum of per-segment cancellation fee - add-on charges)`. The fee is ₹3,999 per Lite segment and ₹2,999 per Classic segment; a Flex segment inside a mixed booking counts as ₹0.
+- Lite / Classic / mixed bookings refund 0 once the first flight has departed; the app explains this in the cancel dialog.
+- A booking cannot be cancelled once any passenger has checked in; the Cancel button is disabled and the reason is shown.
 - An already-cancelled booking refunds 0.
 - Demo only: no money moves.
 

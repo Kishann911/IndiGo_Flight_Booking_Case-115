@@ -190,7 +190,7 @@ class _PassengerDetailsScreenState extends State<PassengerDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const JourneyProgress(step: 3),
+                  const JourneyProgress(step: 3, detail: 'Passenger details'),
                   Text(
                     'Who is travelling?',
                     style: theme.textTheme.headlineSmall,

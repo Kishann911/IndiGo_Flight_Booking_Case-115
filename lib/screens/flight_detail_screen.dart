@@ -127,6 +127,8 @@ class FlightDetailScreen extends StatelessWidget {
                   'Prices per passenger for this flight. Dynamic fare ${Fmt.inr(base)} plus the fare family charge.',
                   style: theme.textTheme.bodyMedium,
                 ),
+                const SizedBox(height: AppSpace.s),
+                _BookingWindowInfo(days: PricingEngine.daysBetween(store.clock(), flight.departure)),
                 const SizedBox(height: AppSpace.m),
                 if (wide)
                   Row(
@@ -236,6 +238,57 @@ class FlightDetailScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Explains the advance-purchase multiplier applied to this flight's fare.
+class _BookingWindowInfo extends StatelessWidget {
+  const _BookingWindowInfo({required this.days});
+
+  final int days;
+
+  static const _table = [
+    ('30 days or more', '×0.85'),
+    ('15–29 days', '×0.95'),
+    ('7–14 days', '×1.00'),
+    ('3–6 days', '×1.15'),
+    ('0–2 days', '×1.30'),
+  ];
+
+  String get _line {
+    final m = PricingEngine.bookingWindowMultiplier(days);
+    final pct = ((m - 1).abs() * 100).round();
+    final ahead = 'Booked $days ${days == 1 ? 'day' : 'days'} ahead';
+    if (m < 1) return '$ahead · $pct% advance-purchase discount applied';
+    if (m > 1) return '$ahead · $pct% late-booking surcharge';
+    return '$ahead · standard fare, no adjustment';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final m = PricingEngine.bookingWindowMultiplier(days);
+    final color = m < 1 ? AppColors.success : (m > 1 ? AppColors.warning : theme.colorScheme.onSurfaceVariant);
+    return Card(
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: const ValueKey('pricing-table-toggle'),
+          leading: Icon(m < 1 ? Icons.trending_down : (m > 1 ? Icons.trending_up : Icons.trending_flat), color: color),
+          title: Text(_line, key: const ValueKey('booking-window-line'), style: theme.textTheme.titleSmall),
+          subtitle: const Text('Tap for the full booking-window table'),
+          childrenPadding: const EdgeInsets.fromLTRB(AppSpace.l, 0, AppSpace.l, AppSpace.m),
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (range, mult) in _table)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text('$range before departure  $mult', style: theme.textTheme.bodyMedium),
+              ),
+          ],
+        ),
       ),
     );
   }

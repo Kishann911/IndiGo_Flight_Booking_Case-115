@@ -216,7 +216,7 @@ void main() {
       final p = ProfileStore(clock: clock, random: Random(1));
       await p.load();
       expect(p.me.lastName, isNotEmpty);
-      p.updateMe(p.me.copyWith(frequentFlyerNo: 'FF-1234567'));
+      p.setFrequentFlyerNo('FF-1234567');
       final t = p.addTraveller(const Passenger(id: '', firstName: 'Riya', lastName: 'Sen', age: 12));
       expect(t.id, isNotEmpty);
       p.updateTraveller(t.copyWith(age: 13));

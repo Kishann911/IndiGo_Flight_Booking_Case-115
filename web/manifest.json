@@ -1,11 +1,11 @@
 {
-    "name": "indigo_flight_booking",
-    "short_name": "indigo_flight_booking",
+    "name": "IndiGo Flight Booking & Check-in — Case 115 (prototype)",
+    "short_name": "IndiGo 115",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Case 115 IndiGo Flight Booking & Check-in (case-study prototype)",
+    "description": "IndiGo Flight Booking & Check-in — Case 115 (prototype). Demo data only, no payment.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

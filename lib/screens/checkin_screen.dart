@@ -100,8 +100,15 @@ class _CheckInScreenState extends State<CheckInScreen> {
     if (shell.pendingCheckInPnr != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final p = context.read<ShellController>().takeCheckInPnr();
-        if (p != null) setState(() => _pnr.text = p);
+        final shell = context.read<ShellController>();
+        final p = shell.takeCheckInPnr();
+        final n = shell.takeCheckInLastName();
+        if (p != null) {
+          setState(() {
+            _pnr.text = p;
+            if (n != null) _last.text = n;
+          });
+        }
       });
     }
     final booking = _foundPnr == null ? null : store.byPnr(_foundPnr!);
@@ -250,6 +257,14 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     final cabin = store.cabinFor(seg.flight, excludePnr: b.pnr);
     final markers = CabinMap.markersFrom(_chosen, b.passengers);
+    // Seats costing more than the active passenger's booked seat stay locked.
+    final byId = {for (final s in cabin) s.id: s};
+    final bookedSeat = byId[seg.seats[_activePax]];
+    final locked = {
+      for (final s in cabin)
+        if (!s.occupied && s.id != bookedSeat?.id && !BookingStore.seatChangeAllowed(s, bookedSeat, seg.family)) s.id,
+    };
+    const freeSeatNote = 'free seat at check-in (standard seats only)';
 
     final passengers = SectionCard(
       title: 'Passengers & seats',
@@ -270,7 +285,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 title: Text(p.fullName),
                 subtitle: Text(done
                     ? 'Checked in · seat ${seg.seats[p.id] ?? '—'}'
-                    : 'Seat ${_chosen[p.id] ?? 'auto-assign'}'),
+                    : 'Seat ${_chosen[p.id] ?? 'auto-assign'}'
+                        '${seg.seats[p.id] == null ? ' · $freeSeatNote' : ''}'),
                 trailing: done
                     ? TextButton(
                         key: ValueKey('view-pass-${p.id}'),
@@ -304,7 +320,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
     final mapCard = SectionCard(
       title: 'Choose a seat',
-      subtitle: 'Seat changes are free at check-in (demo)',
+      subtitle: bookedSeat == null
+          ? 'Seat changes are free at check-in: standard seats only ($freeSeatNote)'
+          : 'Free to change to a seat that costs no more than your booked seat (demo)',
       icon: Icons.event_seat_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -317,6 +335,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
               selected: _chosen[_activePax],
               passengerSeats: markers,
               family: seg.family,
+              lockedSeats: locked,
               onTap: (s) {
                 final pid = _activePax;
                 if (pid == null) return;

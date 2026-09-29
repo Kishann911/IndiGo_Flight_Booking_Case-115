@@ -98,7 +98,8 @@ class BookingConfirmationScreen extends StatelessWidget {
                     ),
                     OutlinedButton.icon(
                       key: const ValueKey('go-web-checkin'),
-                      onPressed: () => ShellController.goTo(context, ShellTab.checkIn, checkInPnr: b.pnr),
+                      onPressed: () => ShellController.goTo(context, ShellTab.checkIn,
+                          checkInPnr: b.pnr, checkInLastName: b.passengers.first.lastName),
                       icon: const Icon(Icons.how_to_reg_outlined),
                       label: const Text('Web check-in'),
                     ),

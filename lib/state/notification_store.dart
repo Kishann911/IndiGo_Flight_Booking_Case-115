@@ -40,8 +40,8 @@ class NotificationStore extends ChangeNotifier {
       try {
         _items.addAll((jsonDecode(raw) as List)
             .map((e) => AppNotification.fromJson(Map<String, dynamic>.from(e as Map))));
-      } catch (_) {
-        // Corrupt data: start empty.
+      } catch (e) {
+        debugPrint('NotificationStore: corrupt saved data, starting empty: $e');
       }
     }
     _loaded = true;
@@ -98,8 +98,12 @@ class NotificationStore extends ChangeNotifier {
   void _save() {
     final data = jsonEncode(_items.map((n) => n.toJson()).toList());
     _saving = _saving.then((_) async {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(prefsKey, data);
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(prefsKey, data);
+      } catch (e) {
+        debugPrint('NotificationStore: saving notifications failed: $e');
+      }
     });
   }
 

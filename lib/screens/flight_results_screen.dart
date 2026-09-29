@@ -25,6 +25,9 @@ class FlightResultsScreen extends StatefulWidget {
   State<FlightResultsScreen> createState() => _FlightResultsScreenState();
 }
 
+/// Minimum gap between one segment's arrival and the next segment's departure.
+const minConnection = Duration(minutes: 60);
+
 class _FlightResultsScreenState extends State<FlightResultsScreen> {
   _Sort _sort = _Sort.earliest;
 
@@ -45,7 +48,13 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     final seg = d.segments[widget.segIndex];
     final today = store.clock();
     final fares = <String, int>{};
-    final flights = SampleData.flightsFor(seg.from, seg.to, seg.date);
+    var flights = SampleData.flightsFor(seg.from, seg.to, seg.date);
+    // Later segments must depart at least 60 min after the previous arrival.
+    final prev = widget.segIndex > 0 ? d.flights[widget.segIndex - 1] : null;
+    final minDeparture = prev?.arrival.add(minConnection);
+    if (minDeparture != null) {
+      flights = flights.where((f) => !f.departure.isBefore(minDeparture)).toList();
+    }
     for (final f in flights) {
       fares[f.id] = PricingEngine.dynamicBaseFare(f, today);
     }
@@ -80,6 +89,15 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   '${Fmt.date(seg.date)} · ${d.passengerCount} ${d.passengerCount == 1 ? 'passenger' : 'passengers'} · ${flights.length} flights',
                   style: theme.textTheme.bodyMedium,
                 ),
+                if (minDeparture != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpace.xs),
+                    child: Text(
+                      'Only flights departing ≥ 60 min after your previous arrival are shown.',
+                      key: const ValueKey('chronology-note'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
                 const SizedBox(height: AppSpace.m),
                 Wrap(
                   spacing: AppSpace.s,
@@ -99,10 +117,13 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                 ),
                 const SizedBox(height: AppSpace.m),
                 if (flights.isEmpty)
-                  const EmptyState(
+                  EmptyState(
                     icon: Icons.flight_outlined,
                     title: 'No flights found',
-                    message: 'Try a different date or route.',
+                    message: minDeparture != null
+                        ? 'No flights leave at least 60 min after your previous arrival. '
+                            'Go back and try another date for this flight.'
+                        : 'Try a different date or route.',
                   ),
                 for (final f in flights)
                   Padding(

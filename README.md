@@ -64,15 +64,15 @@ flutter build web
 ## Demo script
 
 1. Open the app. The **Book** tab shows the search form. Keep DEL to BOM and tap the date field to open the **fare calendar**. The cheapest days are highlighted; pick one.
-2. Optionally switch to **Multi-city** to see segment rows added and removed. Return to one-way and tap **Search flights**.
+2. Optionally switch to **Multi-city** to see segment rows added and removed. Later flights only list departures at least 60 minutes after the previous arrival (same-day connections are allowed). Return to one-way and tap **Search flights**.
 3. In the **flight list**, compare times, duration, stops and the "from ₹" fare. Try the Cheapest / Earliest / Fastest chips. Tap a flight.
-4. On the **flight detail** screen, read the timeline, layover, baggage and meals. Compare **Lite / Classic / Flex** side by side and choose **Classic**.
+4. On the **flight detail** screen, read the timeline, layover, baggage and meals. The line under the fares shows the booking-window pricing (for example "Booked 34 days ahead · 15% advance-purchase discount applied"); tap it for the full table. Compare **Lite / Classic / Flex** side by side and choose **Classic**.
 5. Fill in the **passenger form** (or use "Pick from saved travellers").
 6. On the **seat map**, tap a seat to see its price and legroom. Occupied seats are grey and cannot be tapped. Choose a seat and continue.
 7. On **Extras**, add **priority boarding** (₹299 per passenger), filter meals by cuisine and diet, and continue.
 8. On the **trip summary**, read the fare breakdown and the cancellation policy, then tap **Confirm booking (demo — no payment)**. The **PNR** is shown, and the booking is listed in **My Trips**.
-9. Go to **Check-in** and enter the pre-loaded PNR **K7Q2ZP** with last name **Ojha**. The window shows as open. Check in to get the **boarding pass** with a QR code and seat **14C**.
-10. Open **Flight Status** and press **Simulate delay** / **Simulate gate change**. A push-style SnackBar appears and the bell badge updates. Open the **Baggage** tracker (luggage icon) and press **Simulate RFID scan** to walk the bag `6E-RFID-0011523` through its stages.
+9. Go to **Check-in** and enter the pre-loaded PNR **K7Q2ZP** with last name **Ojha**. The window shows as open. Check in to get the **boarding pass** with a QR code and seat **14C**. At check-in you can move to another standard or middle seat, but paid seats (rows 1–5, exits) are locked with "Fee applies — choose paid seats while booking". The demo booking is re-seeded relative to the current time when it is loaded after its flight has already departed (and it was never cancelled or checked in), so this step always works.
+10. Open **Flight Status** and press **Simulate delay** / **Simulate gate change**. A push-style SnackBar labelled "(simulated)" appears and the bell badge updates. Open the **Baggage** tracker (luggage icon) and press **Simulate RFID scan** to walk the bag `6E-RFID-0011523` through its stages.
 
 ## Project structure
 

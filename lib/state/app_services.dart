@@ -34,6 +34,8 @@ class AppServices {
     for (final b in bookings.bookings) {
       flightStatus.trackBooking(b);
     }
+    // Bookings confirmed later are tracked too.
+    bookings.onBookingConfirmed = flightStatus.trackBooking;
     final baggage = BaggageService(notifications: notifications, clock: clock, random: random);
     return AppServices(
       notifications: notifications,

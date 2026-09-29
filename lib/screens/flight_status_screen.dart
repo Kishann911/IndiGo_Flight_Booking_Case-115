@@ -16,12 +16,11 @@ import 'baggage_screen.dart';
 
 /// A flight leg the user can track (from a booking or from a search).
 class _TrackedLeg {
-  const _TrackedLeg(this.leg, {this.pnr});
+  const _TrackedLeg(this.leg);
 
   final FlightLeg leg;
-  final String? pnr;
 
-  String get key => leg.flightNo;
+  String get key => FlightStatusService.keyFor(leg.flightNo, leg.departure);
 }
 
 /// F7: flight status tracker (simulated real-time).
@@ -46,7 +45,7 @@ class _FlightStatusScreenState extends State<FlightStatusScreen> {
   List<_TrackedLeg> _myLegs(BookingStore store) => [
         for (final b in store.bookings.where((b) => !b.isCancelled))
           for (final s in b.segments)
-            for (final l in s.flight.legs) _TrackedLeg(l, pnr: b.pnr),
+            for (final l in s.flight.legs) _TrackedLeg(l),
       ];
 
   static String _norm(String s) => s.toUpperCase().replaceAll(RegExp(r'\s+'), '');
@@ -202,7 +201,7 @@ class _LiveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = leg.leg;
     final t = service.trackingFor(l.flightNo, l.departure, l.arrival);
-    final events = service.eventsFor(l.flightNo);
+    final events = service.eventsFor(l.flightNo, date: l.departure);
     final theme = Theme.of(context);
     final color = AppColors.status(t.status);
     final delayed = t.delayMinutes > 0;
@@ -282,13 +281,14 @@ class _LiveCard extends StatelessWidget {
             children: [
               FilledButton.tonalIcon(
                 key: const ValueKey('simulate-delay'),
-                onPressed: () => service.simulateDelay(l.flightNo, 30),
+                onPressed: () => service.simulateDelay(l.flightNo, 30, date: l.departure),
                 icon: const Icon(Icons.schedule),
                 label: const Text('Simulate delay'),
               ),
               FilledButton.tonalIcon(
                 key: const ValueKey('simulate-gate'),
-                onPressed: () => service.simulateGateChange(l.flightNo, service.nextGate(l.flightNo)),
+                onPressed: () => service.simulateGateChange(l.flightNo, service.nextGate(l.flightNo, date: l.departure),
+                    date: l.departure),
                 icon: const Icon(Icons.door_front_door_outlined),
                 label: const Text('Simulate gate change'),
               ),

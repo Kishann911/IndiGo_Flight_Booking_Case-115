@@ -5,9 +5,13 @@ import '../theme.dart';
 /// "STEP n OF 6 · Search → Flights → Fare → Seats → Extras → Summary".
 /// [step] is 1-based: 1 Search, 2 Flights, 3 Fare, 4 Seats, 5 Extras, 6 Summary.
 class JourneyProgress extends StatelessWidget {
-  const JourneyProgress({super.key, required this.step}) : assert(step >= 1 && step <= 6);
+  const JourneyProgress({super.key, required this.step, this.detail}) : assert(step >= 1 && step <= 6);
 
   final int step;
+
+  /// Optional caption for a sub-step inside [step] (e.g. "Passenger details"
+  /// inside Fare), shown under the step row.
+  final String? detail;
 
   static const steps = ['Search', 'Flights', 'Fare', 'Seats', 'Extras', 'Summary'];
 
@@ -18,7 +22,7 @@ class JourneyProgress extends StatelessWidget {
     final theme = Theme.of(context);
     final s = theme.colorScheme;
     return Semantics(
-      label: labelFor(step),
+      label: detail == null ? labelFor(step) : '${labelFor(step)} ($detail)',
       child: ExcludeSemantics(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpace.s),
@@ -46,6 +50,8 @@ class JourneyProgress extends StatelessWidget {
                   ],
                 ],
               ),
+              if (detail != null)
+                Text('Now: $detail', style: theme.textTheme.labelSmall?.copyWith(color: s.onSurfaceVariant)),
               const SizedBox(height: AppSpace.xs),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),

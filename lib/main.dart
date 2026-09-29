@@ -48,14 +48,6 @@ class _IndigoAppState extends State<IndigoApp> {
     }
   }
 
-  static IconData iconFor(String kind) => switch (kind) {
-        NotificationKind.delay => Icons.schedule,
-        NotificationKind.gate => Icons.door_front_door_outlined,
-        NotificationKind.boarding => Icons.airline_seat_recline_normal,
-        NotificationKind.baggage => Icons.luggage_outlined,
-        _ => Icons.confirmation_number_outlined,
-      };
-
   void _showPush(AppNotification n) {
     final messenger = _messengerKey.currentState;
     if (messenger == null) return;
@@ -66,9 +58,9 @@ class _IndigoAppState extends State<IndigoApp> {
         duration: const Duration(seconds: 4),
         content: Row(
           children: [
-            Icon(iconFor(n.kind), color: Colors.white),
+            Icon(NotificationsScreen.iconFor(n.kind), color: Colors.white),
             const SizedBox(width: 12),
-            Expanded(child: Text('${n.title}\n${n.body}', maxLines: 3, overflow: TextOverflow.ellipsis)),
+            Expanded(child: Text('(simulated) ${n.title}\n${n.body}', maxLines: 3, overflow: TextOverflow.ellipsis)),
           ],
         ),
         action: SnackBarAction(
