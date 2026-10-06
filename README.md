@@ -2,6 +2,9 @@
 
 **Cross Platform Application Development · Case #115 · Kishan Ojha**
 
+[![Download Android APK](https://img.shields.io/badge/Download-Android_APK_v1.0.0-2A2F8F?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Kishann911/IndiGo_Flight_Booking_Case-115/releases/download/v1.0.0/app-release.apk)
+[![GitHub Releases](https://img.shields.io/badge/GitHub-Releases-blue?style=for-the-badge&logo=github)](https://github.com/Kishann911/IndiGo_Flight_Booking_Case-115/releases)
+
 A Flutter case-study prototype covering flight search, fare families, seat selection, web check-in, a QR boarding pass, flight status and baggage tracking. It is built with Material 3 and runs on Android, iOS and the web.
 
 ## Problem statement
