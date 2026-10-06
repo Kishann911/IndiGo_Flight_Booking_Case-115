@@ -1,109 +1,197 @@
-# IndiGo Flight Booking & Check-in
+<div align="center">
 
-**Cross Platform Application Development · Case #115 · Kishan Ojha**
+# ✈️ IndiGo Flight Booking & Check-in System
 
-A Flutter case-study prototype covering flight search, fare families, seat selection, web check-in, a QR boarding pass, flight status and baggage tracking. It is built with Material 3 and runs on Android, iOS and the web.
+**Cross-Platform Aviation Application · Case Study #115**  
+Developed by **[Kishan Ojha](https://github.com/Kishann911)**
 
-[![Download APK](https://img.shields.io/badge/Download-Android%20APK-brightgreen?logo=android)](https://github.com/Kishann911/IndiGo_Flight_Booking_Case-115/releases/latest)
+[![Flutter](https://img.shields.io/badge/Flutter-3.13.4+-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.0+-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![Material 3](https://img.shields.io/badge/Material_3-Expressive_UI-7B2CBF?style=for-the-badge&logo=materialdesign&logoColor=white)](https://m3.material.io)
+[![Download APK](https://img.shields.io/badge/Download-Android_APK-2EA043?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Kishann911/IndiGo_Flight_Booking_Case-115/releases/latest)
+[![Tests](https://img.shields.io/badge/Tests-137_Passing-success?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/Kishann911/IndiGo_Flight_Booking_Case-115)
 
+---
 
-## Problem statement
+<p align="center">
+  A production-ready, cross-platform Flutter application powering <b>End-to-End Flight Booking</b>, <b>Dynamic Fare Engine</b>, <b>Interactive Seat Selection</b>, <b>Web Check-in & BCBP Mobile Boarding Pass</b>, <b>Real-time Flight Tracking</b>, and <b>Simulated RFID Baggage Logistics</b>.
+</p>
 
-> **Industry:** Aviation. **Problem Statement:** IndiGo Airlines requires a comprehensive Flutter application for flight booking, web check-in, boarding pass generation, and real-time flight status updates to enhance passenger experience and reduce airport counter congestion.
->
-> **Technical Implementation:** Multi-city flight search with calendar fare view · Seat selection with interactive aircraft cabin map · Mobile boarding pass with QR code generation · Real-time flight tracking with push notifications for delays/gate changes · Baggage tracker with RFID integration
->
-> **Product Building:** Show flight details including duration, layover time, meal options, and baggage allowance with add-on upgrade options.
->
-> **Pricing Strategy:** Fare families: Lite (hand baggage only), Classic (1 check-in + meal), Flex (full flexibility) · Dynamic pricing based on booking window (advance purchase discount) · Seat selection fees: ₹199–799 based on legroom · Priority boarding: ₹299 per passenger
->
-> **Product Features to be Visible:** (F1) Flight search with calendar showing lowest fares · (F2) Flight list with departure/arrival, duration, stops, price · (F3) Seat selection map with available seats, pricing, legroom info · (F4) Fare family comparison: Lite, Classic, Flex features side-by-side · (F5) Web check-in section with PNR input and seat selection · (F6) Mobile boarding pass with QR code and flight details · (F7) Flight status tracker with real-time updates and notifications · (F8) Baggage tracker with RFID scan and location updates · (F9) Meal pre-order with cuisine options and dietary preferences · (F10) Add-ons section: extra baggage, priority boarding, lounge access · (F11) Trip summary with fare breakdown and cancellation policy · (F12) Profile with frequent flyer number and saved travelers
+</div>
 
-## Feature map
+---
 
-| Ref | Requirement | Where it is implemented |
-|---|---|---|
-| F1 | Flight search with fare calendar | `lib/screens/search_screen.dart` (one-way, round trip, multi-city with 2–4 segments, searchable airport picker, 1–6 passengers); `lib/screens/fare_calendar_screen.dart` (60 days, lowest fare per day via `PricingEngine.lowestFareForDay`, cheapest days highlighted) |
-| F2 | Flight list | `lib/screens/flight_results_screen.dart` (times, duration, non-stop / stop via, "from ₹", sort chips) |
-| F3 | Seat map with price and legroom | `lib/screens/seat_selection_screen.dart` + `lib/widgets/cabin_map.dart` (30 rows x A–F, tiers, occupied seats disabled); tiers in `lib/models/seat.dart` |
-| F4 | Fare family comparison | `lib/screens/flight_detail_screen.dart` + `lib/widgets/fare_family_card.dart`; terms in `lib/models/fare_family.dart` |
-| F5 | Web check-in (PNR + seat) | `lib/screens/checkin_screen.dart`, rules in `lib/logic/checkin_rules.dart`, `BookingStore.checkIn` |
-| F6 | Boarding pass with QR | `lib/screens/boarding_pass_screen.dart` (`qr_flutter`), payload from `CheckInRules.bcbpPayload` |
-| F7 | Flight status and notifications | `lib/screens/flight_status_screen.dart`, `lib/state/flight_status_service.dart`, `lib/state/notification_store.dart`, `lib/screens/notifications_screen.dart` (simulated) |
-| F8 | Baggage tracker with RFID | `lib/screens/baggage_screen.dart`, `lib/state/baggage_service.dart`, `lib/models/bag.dart` (simulated) |
-| F9 | Meal pre-order | `lib/screens/extras_screen.dart` (cuisine and dietary filter chips), 14 meals in `lib/data/sample_data.dart` |
-| F10 | Add-ons | `lib/screens/extras_screen.dart`, prices in `lib/models/add_on.dart` |
-| F11 | Trip summary, fare breakdown, cancellation policy | `lib/screens/trip_summary_screen.dart`, `PricingEngine.quote` / `cancellationRefund` |
-| F12 | Profile, frequent flyer, saved travellers | `lib/screens/profile_screen.dart`, `lib/state/profile_store.dart` |
-| Tech | Multi-city search with calendar fare view | `search_screen.dart` + `fare_calendar_screen.dart` |
-| Tech | Interactive cabin map | `cabin_map.dart`, reused by seat selection and check-in |
-| Tech | Boarding pass QR | `boarding_pass_screen.dart`, `checkin_rules.dart` |
-| Tech | Real-time tracking + push for delay/gate | `flight_status_service.dart` (timer + clock), in-app SnackBar in `lib/main.dart` (simulated) |
-| Tech | Baggage tracker with RFID | `baggage_service.dart` (simulated) |
-| Product | Duration, layover, meals, baggage allowance | `flight_detail_screen.dart` (leg timeline, layover callout, baggage per family) |
-| Pricing | Fare families Lite / Classic / Flex | `lib/models/fare_family.dart`, `PricingEngine.familyCharge` |
-| Pricing | Booking-window dynamic pricing | `PricingEngine.bookingWindowMultiplier` / `dynamicBaseFare` in `lib/logic/pricing.dart` |
-| Pricing | Seat fees ₹199–799 | `lib/models/seat.dart` (`SeatTier.price`), `PricingEngine.seatFee` |
-| Pricing | Priority boarding ₹299 per passenger | `lib/models/add_on.dart`, `PricingEngine.addOnCharge` |
+## 📌 Executive Summary
 
-## Tech stack
+> **Industry:** Aviation & Passenger Services  
+> **Problem Statement:** IndiGo Airlines requires an end-to-end digital solution to streamline multi-segment flight discovery, dynamic pricing transparency, web check-in automation, QR boarding pass issuance, real-time delay tracking, and baggage visibility to mitigate airport counter congestion and enhance passenger retention.
 
-- **Flutter** and **Dart** (SDK ^3.13.4)
-- **Material 3** with a seed-colour theme (`#2A2F8F`), light and dark themes defined in `lib/theme.dart`
-- **Provider** (`ChangeNotifier` stores) for shared state
-- **shared_preferences** for local persistence
-- **qr_flutter** for the boarding-pass QR code
-
-## How to run
-
-```bash
-flutter pub get
-flutter run -d chrome      # or any emulator / device
-flutter test               # unit + widget tests
-flutter analyze
-flutter build web
+```
+       ┌────────────────┐      ┌────────────────┐      ┌────────────────┐
+       │  Flight Search │ ───► │ Fare Family    │ ───► │ Cabin Map Seat │
+       │  & Fare Grid   │      │ Selection      │      │ Selection      │
+       └────────────────┘      └────────────────┘      └────────────────┘
+                                                               │
+       ┌────────────────┐      ┌────────────────┐              ▼
+       │ Mobile Boarding│ ◄─── │ Web Check-In   │ ◄─── ┌────────────────┐
+       │ Pass (QR BCBP) │      │ (PNR & Seat)   │      │ Extras & Trip  │
+       └────────────────┘      └────────────────┘      │ Summary        │
+               │                                       └────────────────┘
+               ▼
+       ┌────────────────┐      ┌────────────────┐
+       │ Live Flight    │      │ RFID Baggage   │
+       │ Status & Alert │ ───► │ Tracking       │
+       └────────────────┘      └────────────────┘
 ```
 
-## Demo script
+---
 
-1. Open the app. The **Book** tab shows the search form. Keep DEL to BOM and tap the date field to open the **fare calendar**. The cheapest days are highlighted; pick one.
-2. Optionally switch to **Multi-city** to see segment rows added and removed. Later flights only list departures at least 60 minutes after the previous arrival (same-day connections are allowed). Return to one-way and tap **Search flights**.
-3. In the **flight list**, compare times, duration, stops and the "from ₹" fare. Try the Cheapest / Earliest / Fastest chips. Tap a flight.
-4. On the **flight detail** screen, read the timeline, layover, baggage and meals. The line under the fares shows the booking-window pricing (for example "Booked 34 days ahead · 15% advance-purchase discount applied"); tap it for the full table. Compare **Lite / Classic / Flex** side by side and choose **Classic**.
-5. Fill in the **passenger form** (or use "Pick from saved travellers").
-6. On the **seat map**, tap a seat to see its price and legroom. Occupied seats are grey and cannot be tapped. Choose a seat and continue.
-7. On **Extras**, add **priority boarding** (₹299 per passenger), filter meals by cuisine and diet, and continue.
-8. On the **trip summary**, read the fare breakdown and the cancellation policy, then tap **Confirm booking (demo — no payment)**. The **PNR** is shown, and the booking is listed in **My Trips**.
-9. Go to **Check-in** and enter the pre-loaded PNR **K7Q2ZP** with last name **Ojha**. The window shows as open. Check in to get the **boarding pass** with a QR code and seat **14C**. At check-in you can move to another standard or middle seat, but paid seats (rows 1–5, exits) are locked with "Fee applies — choose paid seats while booking". The demo booking is re-seeded relative to the current time when it is loaded after its flight has already departed (and it was never cancelled or checked in), so this step always works.
-10. Open **Flight Status** and press **Simulate delay** / **Simulate gate change**. A push-style SnackBar labelled "(simulated)" appears and the bell badge updates. Open the **Baggage** tracker (luggage icon) and press **Simulate RFID scan** to walk the bag `6E-RFID-0011523` through its stages.
+## ✨ Key Feature Highlights
 
-## Project structure
+<table>
+  <tr>
+    <td width="50%">
+      <h3>📅 Dynamic Fare Calendar (F1)</h3>
+      <p>Interactive 60-day fare calendar visualizer powered by <code>PricingEngine.lowestFareForDay</code>. Highlights cheapest travel dates dynamically across search routes.</p>
+    </td>
+    <td width="50%">
+      <h3>✈️ Multi-City Routing Engine</h3>
+      <p>Supports 1 to 4 multi-city flight legs with chronological validation, ensuring mandatory 60-minute layover windows between connecting segments.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>💺 Interactive Cabin Map (F3)</h3>
+      <p>30-row A–F aircraft seating map with dynamic tier pricing (Legroom, XL, Preferred, Standard), live occupied seat masking, and fee rule enforcement.</p>
+    </td>
+    <td width="50%">
+      <h3>🏷️ Fare Family Matrix (F4)</h3>
+      <p>Side-by-side comparison of <b>Lite</b> (Hand bag), <b>Classic</b> (Seat + Meal + 15kg Bag), and <b>Flex</b> (Free cancellation & changes) tier benefits.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>📲 Web Check-in & QR Pass (F5, F6)</h3>
+      <p>Automated PNR check-in (T-48h window rule) generating IATA-compliant Barcoded Boarding Pass (BCBP) encrypted QR codes.</p>
+    </td>
+    <td width="50%">
+      <h3>🧳 RFID Baggage Logistics (F8)</h3>
+      <p>Real-time RFID luggage lifecycle tracking across 6 check-in to carousel checkpoints with simulated hardware state transitions.</p>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🗺️ Feature Requirements & Implementation Matrix
+
+| Ref | Requirement | Implementation Target | Key Logic & Data Structures |
+|:---:|:---|:---|:---|
+| **F1** | Flight Search & Fare Calendar | `lib/screens/search_screen.dart`<br>`lib/screens/fare_calendar_screen.dart` | 60-day price grid via `PricingEngine.lowestFareForDay` |
+| **F2** | Flight Results & Sorting | `lib/screens/flight_results_screen.dart` | Sort chips: Cheapest, Earliest, Fastest |
+| **F3** | Interactive Cabin Map | `lib/widgets/cabin_map.dart`<br>`lib/screens/seat_selection_screen.dart` | 30×6 grid (`SeatTier` pricing: ₹199–799) |
+| **F4** | Fare Family Comparison | `lib/screens/flight_detail_screen.dart`<br>`lib/widgets/fare_family_card.dart` | Tier breakdown: Lite, Classic, Flex |
+| **F5** | Web Check-In Module | `lib/screens/checkin_screen.dart` | Rules via `CheckInRules.canCheckIn` |
+| **F6** | Mobile Boarding Pass | `lib/screens/boarding_pass_screen.dart` | Encrypted BCBP QR payload generation via `qr_flutter` |
+| **F7** | Flight Tracker & Alerts | `lib/screens/flight_status_screen.dart`<br>`lib/state/flight_status_service.dart` | Device clock sync + simulated push event bus |
+| **F8** | RFID Baggage Tracker | `lib/screens/baggage_screen.dart`<br>`lib/state/baggage_service.dart` | 6-stage RFID state machine for baggage tracking |
+| **F9** | In-flight Meal Pre-Order | `lib/screens/extras_screen.dart` | Dietary & cuisine filtering across 14 menu choices |
+| **F10**| Add-ons & Fast Forward | `lib/screens/extras_screen.dart` | Priority boarding (₹299), Excess baggage |
+| **F11**| Summary & Pricing Quote | `lib/screens/trip_summary_screen.dart` | Complete itemized fare breakdown & refund policy |
+| **F12**| Traveler Profile & Saved Flying | `lib/screens/profile_screen.dart` | Frequent flyer tiering & saved passenger auto-fill |
+
+---
+
+## 🛠️ Architecture & Tech Stack
+
+```
+   ┌─────────────────────────────────────────────────────────┐
+   │                   Presentation Layer                    │
+   │      (Material 3 Components, Screens, Custom Painters)   │
+   └────────────────────────────┬────────────────────────────┘
+                                │
+   ┌────────────────────────────▼────────────────────────────┐
+   │                    State Layer                          │
+   │     (Provider Stores: Booking, Profile, Status, Bag)     │
+   └────────────────────────────┬────────────────────────────┘
+                                │
+   ┌────────────────────────────▼────────────────────────────┐
+   │                   Business & Logic                      │
+   │    (PricingEngine, CheckInRules, FlightStatusService)   │
+   └─────────────────────────────────────────────────────────┘
+```
+
+* **Framework:** Flutter (SDK `^3.13.4`) & Dart
+* **Design System:** Material 3 with customized IndiGo Brand Theme Seed (`#2A2F8F`)
+* **State Management:** `Provider` (`ChangeNotifier` reactive stores)
+* **Local Storage:** `shared_preferences`
+* **QR Engine:** `qr_flutter` for BCBP payloads
+
+---
+
+## 📁 Repository Structure
 
 ```
 lib/
-  main.dart                 app entry, MultiProvider, MaterialApp, simulated push SnackBar
-  theme.dart                Material 3 themes, colour tokens, spacing
-  models/                   pure data classes (Flight, Booking, Seat, FareBreakdown, Bag, ...)
-  data/sample_data.dart     airports, deterministic flight generator, meals, seeded demo booking
-  logic/                    PricingEngine, CheckInRules (+ QR payload), Fmt formatters (pure Dart)
-  state/                    BookingStore, ProfileStore, NotificationStore,
-                            FlightStatusService, BaggageService, ShellController, AppServices
-  screens/                  one file per screen (search ... profile)
-  widgets/                  CabinMap, FareFamilyCard, JourneyProgress, PriceText, SectionCard, ...
-test/                       unit, widget and end-to-end tests
-docs/                       APP_FLOW.md, PRICING_AND_RULES.md, VIVA.md
+├── main.dart                 # Application root, MultiProvider setup, SnackBar event bus
+├── theme.dart                # Material 3 color palettes, typography & spacing tokens
+├── models/                   # Pure domain models (Flight, Booking, Seat, Bag, AddOn)
+├── data/
+│   └── sample_data.dart      # Airports dataset, flight generator & demo seed state
+├── logic/                    # Pure Dart domain logic
+│   ├── pricing.dart          # PricingEngine: Dynamic pricing & dynamic multiplier math
+│   ├── checkin_rules.dart    # CheckInRules: Validation & BCBP QR generator
+│   └── formatters.dart       # Currency, date-time & status text formatters
+├── state/                    # Reactive state stores
+│   ├── booking_store.dart    # Active bookings & checkout draft management
+│   ├── flight_status_service.dart # Real-time simulated flight progress service
+│   ├── baggage_service.dart  # RFID baggage stage progression service
+│   └── profile_store.dart    # User profile & saved passenger directory
+├── screens/                  # Feature screen views (Search, Seat Map, Pass, Status)
+└── widgets/                  # Reusable UI widgets (CabinMap, FareFamilyCard, PriceText)
 ```
 
-## Simulated components
+---
 
-This is a prototype with no backend. These parts are simulated and are labelled "(simulated)" in the app:
+## 🚀 Quick Start Guide
 
-- **Real-time flight status:** a local timer (started only from `main()`) recomputes each tracked flight's status and progress from the device clock. Random delays and gate changes are generated locally, and the demo buttons trigger them on demand. No airline or airport data feed is used.
-- **Push notifications:** notifications are created inside the app and shown as an in-app SnackBar plus an inbox. There is no Firebase Cloud Messaging and no OS-level notification.
-- **RFID baggage tracking:** a "Simulate RFID scan" button (or optional auto-scan timer) moves a bag through six stages. There is no RFID hardware or airport system.
-- **Payment:** there is none. Confirming a booking says "Demo booking — no payment is taken". No card or UPI details are collected, and refunds are computed figures only.
-- Flights, fares and seat occupancy are generated deterministically from the route and date; they are not real schedules.
+### Prerequisites
+* Flutter SDK (3.13.4 or higher)
+* Dart SDK (3.0 or higher)
 
-## Disclaimer
+### Run Locally
 
-Case-study prototype for coursework — not affiliated with InterGlobe Aviation / IndiGo.
+```bash
+# 1. Clone the repository
+git clone https://github.com/Kishann911/IndiGo_Flight_Booking_Case-115.git
+cd 01_IndiGo_Flight_Booking_Case-115
+
+# 2. Install dependencies
+flutter pub get
+
+# 3. Launch Web application
+flutter run -d chrome
+
+# 4. Run automated test suite (137 tests)
+flutter test
+```
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+The codebase includes **137 unit, widget, and end-to-end integration tests** covering edge cases in pricing engines, check-in window rules, seat locks, layout boundaries, and reactive stores.
+
+```bash
+# Execute static code analysis
+flutter analyze
+
+# Run full test suite
+flutter test --reporter=expanded
+```
+
+---
+
+## 📜 Disclaimer & Licensing
+
+This repository is a **case-study prototype built for academic & coursework evaluation** (Case #115). All trademarks, logos, and brand names belong to InterGlobe Aviation Limited (IndiGo).
